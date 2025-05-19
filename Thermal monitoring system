@@ -1,0 +1,70 @@
+#include <DHT.h>
+#include <LiquidCrystal_I2C.h>
+
+#define DHTPIN 2     
+#define DHTTYPE DHT22
+#define RELAY_PIN 3
+
+DHT dht(DHTPIN, DHTTYPE);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void setup() {
+  pinMode(RELAY_PIN, OUTPUT);
+  lcd.begin(16, 2);
+  lcd.backlight();
+  dht.begin();
+
+  displayTitle("Greenhouse Control");
+  scrollNames("Emmanuel & Benjamin");
+}
+
+void loop() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  lcd.clear();
+
+  if (isnan(h) || isnan(t)) {
+    lcd.setCursor(0, 0);
+    lcd.print("Sensor Error!");
+    digitalWrite(RELAY_PIN, LOW); // Safety: turn off relay
+  } else {
+    lcd.setCursor(0, 0);
+    lcd.print("Temp: ");
+    lcd.print(t, 1); // 1 decimal
+    lcd.print(" C");
+
+    lcd.setCursor(0, 1);
+    lcd.print("Humidity: ");
+    lcd.print(h, 1);
+    lcd.print(" %");
+
+    if (t > 30) {
+      digitalWrite(RELAY_PIN, HIGH);
+    } else {
+      digitalWrite(RELAY_PIN, LOW);
+    }
+  }
+
+  delay(2000);
+}
+
+void displayTitle(String title) {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(title.substring(0, 16)); // Print only first 16 chars
+  delay(2000);
+}
+
+void scrollNames(String names) {
+  int len = names.length();
+  String padding = "                "; // 16 spaces for LCD width
+  String scrollText = names + padding;
+  for (int i = 0; i <= len; i++) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(scrollText.substring(i, i + 16));
+    delay(300);
+  }
+  lcd.clear();
+}
